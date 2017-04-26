@@ -32,15 +32,18 @@ class ScheduleSpider(scrapy.Spider):
                 callback=self.parse_list,
             )
 
+    def table_request(self, link):
+        table_type = self.table_type(link)
+        if table_type:
+            method = self.parse_table_methods[table_type]
+            return scrapy.Request(
+                url=self.base_url + link,
+                callback=partial(method, self),
+            )
+
     def parse_list(self, response):
         for url in response.css('a::attr(href)').extract():
-            table_type = self.table_type(url)
-            if table_type:
-                method = self.parse_table_methods[table_type]
-                yield scrapy.Request(
-                    url=self.base_url + url,
-                    callback=partial(method, self),
-                )
+            yield self.table_request(url)
 
     def style2dict(self, style):
         return dict(
